@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carte de Sartrouville</title>
+    <!-- Inclure Bootstrap CSS -->
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Inclure Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <!-- Inclure Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        #map {
+            height: 100vh; /* Pour occuper toute la hauteur de la fenêtre */
+            padding: 15px; /* Ajout du padding */
+        }
+        #site-map {
+            height: 300px; /* Hauteur fixe pour la carte dans la section planning */
+            padding: 15px; /* Ajout du padding */
+        }
+        .site-table th, .site-table td {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-6 p-0">
+                <div id="map"></div>
+            </div>
+            <div class="col-md-6">
+                <div id="planning" class="p-3">
+                    <h2 class="text-center">PLANNING TYPE MENSUEL EQUIPE NORD</h2>
+                    <div class="d-flex justify-content-center mb-3">
+                        <div class="view-mode btn-group" role="group" aria-label="View Mode">
+                            <button type="button" class="btn btn-secondary" id="view-map">Carte</button>
+                            <button type="button" class="btn btn-primary" id="view-table">Tableau</button>
+                            <button type="button" class="btn btn-primary" id="view-planning">Planning</button>
+                            <button type="button" class="btn btn-primary" id="view-list">Liste</button>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <input type="text" id="search" class="form-control" placeholder="Recherche...">
+                    </div>
+                    <div id="site-list"></div>
+                    <div id="site-map" style="display: none;"></div>
+                    <div id="site-table" style="display: none;">
+                        <table class="table table-bordered site-table">
+                            <thead>
+                                <tr>
+                                    <th>Nom du site</th>
+                                    <th>Latitude</th>
+                                    <th>Longitude</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Inclure jQuery et Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <!-- Inclure Leaflet JS -->
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+    <script>
+        // Initialiser la carte
+        var map = L.map('map').setView([48.9401, 2.1769], 13); // Coordonnées de Sartrouville
+
+        // Ajouter le fond de carte OpenStreetMap
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // Définir les polygones pour les sites publics
+        var sites = [
+            {
+                name: "Parc du Dispensaire",
+                coordinates: [
+                    [48.9425, 2.1775],
+                    [48.9435, 2.1775],
+                    [48.9435, 2.1785],
+                    [48.9425, 2.1785]
+                ]
+            },
+            {
+                name: "Square de la Liberté",
+                coordinates: [
+                    [48.9405, 2.1715],
+                    [48.9415, 2.1715],
+                    [48.9415, 2.1725],
+                    [48.9405, 2.1725]
+                ]
+            },
+            {
+                name: "Jardin des Tuileries",
+                coordinates: [
+                    [48.9445, 2.1735],
+                    [48.9455, 2.1735],
+                    [48.9455, 2.1745],
+                    [48.9445, 2.1745]
+                ]
+            },
+            {
+                name: "Parc Maurice Berteaux",
+                coordinates: [
+                    [48.9415, 2.1755],
+                    [48.9425, 2.1755],
+                    [48.9425, 2.1765],
+                    [48.9415, 2.1765]
+                ]
+            }
+            // Ajouter les autres sites ici
+        ];
+
+        // Fonction pour afficher les sites dans une liste
+        function displayList(sites) {
+            var listContainer = document.getElementById('site-list');
+            listContainer.innerHTML = '';
+            var ul = document.createElement('ul');
+            ul.classList.add('list-group');
+            sites.forEach(function(site) {
+                var li = document.createElement('li');
+                li.classList.add('list-group-item');
+                li.textContent = site.name;
+                ul.appendChild(li);
+            });
+            listContainer.appendChild(ul);
+        }
+
+        // Fonction pour afficher les sites dans une table
+        function displayTable(sites) {
+            var tbody = document.querySelector('#site-table tbody');
+            tbody.innerHTML = '';
+            sites.forEach(function(site) {
+                var tr = document.createElement('tr');
+                var tdName = document.createElement('td');
+                tdName.textContent = site.name;
+                var tdLat = document.createElement('td');
+                tdLat.textContent = site.coordinates[0][0]; // Afficher la latitude du premier point du polygone
+                var tdLon = document.createElement('td');
+                tdLon.textContent = site.coordinates[0][1]; // Afficher la longitude du premier point du polygone
+                tr.appendChild(tdName);
+                tr.appendChild(tdLat);
+                tr.appendChild(tdLon);
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Initialisation de la liste et de la table
+        displayList(sites);
+        displayTable(sites);
+
+        // Fonction pour filtrer les sites
+        function filterSites(query) {
+            return sites.filter(function(site) {
+                return site.name.toLowerCase().includes(query.toLowerCase());
+            });
+        }
+
+        // Fonction de recherche
+        document.getElementById('search').addEventListener('input', function() {
+            var query = this.value;
+            var filteredSites = filterSites(query);
+            displayList(filteredSites);
+            displayTable(filteredSites);
+        });
+
+        // Gestion des modes d'affichage
+        document.getElementById('view-list').addEventListener('click', function() {
+            document.getElementById('site-list').style.display = 'block';
+            document.getElementById('site-map').style.display = 'none';
+            document.getElementById('site-table').style.display = 'none';
+        });
+
+        document.getElementById('view-map').addEventListener('click', function() {
+            document.getElementById('site-list').style.display = 'none';
+            document.getElementById('site-map').style.display = 'block';
+            document.getElementById('site-table').style.display = 'none';
+        });
+
+        document.getElementById('view-table').addEventListener('click', function() {
+            document.getElementById('site-list').style.display = 'none';
+            document.getElementById('site-map').style.display = 'none';
+            document.getElementById('site-table').style.display = 'block';
+        });
+
+        // Ajouter les polygones sur la carte principale
+        sites.forEach(function(site) {
+            var polygon = L.polygon(site.coordinates, {
+                color: 'red',
+                fillColor: '#f03',
+                fillOpacity: 0.5
+            }).addTo(map);
+            polygon.bindPopup('<b>' + site.name + '</b>');
+        });
+
+        // Ajouter les polygones sur la carte de la section planning
+        var planningMap = L.map('site-map').setView([48.9401, 2.1769], 13); // Coordonnées de Sartrouville
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(planningMap);
+
+        sites.forEach(function(site) {
+            var polygon = L.polygon(site.coordinates, {
+                color: 'red',
+                fillColor: '#f03',
+                fillOpacity: 0.5
+            }).addTo(planningMap);
+            polygon.bindPopup('<b>' + site.name + '</b>');
+        });
+    </script>
+</body>
+</html>

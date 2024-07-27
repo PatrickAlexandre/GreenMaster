@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion des Espaces Verts</title>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        #map { height: 100vh; }
+        #planning { height: 100vh; overflow-y: auto; }
+        @media (max-width: 768px) {
+            #map { height: 50vh; }
+            #planning { height: 50vh; }
+        }
+        .hidden { display: none; }
+        .btn-icon { font-size: 1.2rem; }
+        .btn-primary { background-color: #006400; border-color: #004d00; }
+        .btn-primary:hover { background-color: #004d00; border-color: #003300; }
+        .table th, .table td { text-align: center; }
+        .table-bordered { border-color: #006400; }
+        .table-bordered th, .table-bordered td { border: 1px solid #006400; }
+        #site-list ul { padding: 0; list-style: none; }
+        #site-list .list-group-item { background-color: #f0f8ff; border: 1px solid #006400; }
+        #site-list .list-group-item:hover { background-color: #e6ffe6; }
+        #planning-content { background-color: #f0f8ff; padding: 15px; }
+        #site-table {
+            overflow-x: auto;
+        }
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-6 col-12 p-0">
+                <div id="map"></div>
+            </div>
+            <div class="col-md-6 col-12">
+                <div id="planning" class="p-3">
+                    <h2 class="text-center">PLANNING MENSUEL EQUIPE NORD</h2>
+                    <div class="d-flex justify-content-center mb-3">
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-primary btn-icon" id="view-list">
+                                <i class="fas fa-list"></i> Liste
+                            </button>
+                            <button type="button" class="btn btn-primary btn-icon" id="view-table">
+                                <i class="fas fa-table"></i> Tableau
+                            </button>
+                            <button type="button" class="btn btn-primary btn-icon" id="view-planning">
+                                <i class="fas fa-calendar-alt"></i> Planning
+                            </button>
+                        </div>
+                    </div>
+                    <input type="text" id="search" class="form-control mb-3" placeholder="Recherche...">
+                    <div id="site-list"></div>
+                    <div id="site-table" class="hidden">
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr><th>Nom du site</th><th>Latitude</th><th>Longitude</th><th>Dernière Collecte</th></tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div id="planning-content" class="hidden">
+                        <p>Contenu du planning...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+        // Initialisation de la carte
+        var map = L.map('map').setView([48.9401, 2.1769], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors' }).addTo(map);
+
+        var greenSpaces = [
+            {
+                "name": "Parc des Trois Ormes",
+                "coordinates": [
+                    [48.9391, 2.1778],
+                    [48.9392, 2.1781],
+                    [48.9394, 2.1779],
+                    [48.9393, 2.1776]
+                ],
+                "lastCollection": "2024-06-15"
+            },
+            {
+                "name": "Jardin de l'Église",
+                "coordinates": [
+                    [48.9405, 2.1762],
+                    [48.9406, 2.1765],
+                    [48.9408, 2.1763],
+                    [48.9407, 2.1760]
+                ],
+                "lastCollection": "2024-05-20"
+            },
+            {
+                "name": "Square des Libertés",
+                "coordinates": [
+                    [48.9410, 2.1784],
+                    [48.9411, 2.1787],
+                    [48.9413, 2.1785],
+                    [48.9412, 2.1782]
+                ],
+                "lastCollection": "2024-07-10"
+            },
+            {
+                "name": "Parc du Centre",
+                "coordinates": [
+                    [48.9420, 2.1751],
+                    [48.9422, 2.1754],
+                    [48.9424, 2.1752],
+                    [48.9423, 2.1749]
+                ],
+                "lastCollection": "2024-06-05"
+            }
+        ];
+
+        // Fonction pour afficher la liste des sites
+        function displayList(sites) {
+            document.getElementById('site-list').innerHTML = '<ul class="list-group">' + sites.map(site => `<li class="list-group-item">${site.name}</li>`).join('') + '</ul>';
+        }
+
+        // Fonction pour afficher le tableau des sites
+        function displayTable(sites) {
+            document.querySelector('#site-table tbody').innerHTML = sites.map(site => `<tr><td>${site.name}</td><td>${site.coordinates[0][0]}</td><td>${site.coordinates[0][1]}</td><td>${site.lastCollection}</td></tr>`).join('');
+        }
+
+        // Fonction pour obtenir la couleur en fonction de la date de la dernière collecte
+        function getColor(lastCollection) {
+            const today = new Date();
+            const collectionDate = new Date(lastCollection);
+            const diffDays = Math.floor((today - collectionDate) / (1000 * 60 * 60 * 24));
+            return diffDays <= 30 ? '#9ACD32' : (diffDays <= 60 ? '#FFA500' : '#DC143C');
+        }
+
+        // Fonction pour afficher les sites en fonction du mode de vue sélectionné
+        document.getElementById('search').addEventListener('input', function() {
+            var query = this.value.toLowerCase();
+            var filteredSites = greenSpaces.filter(site => site.name.toLowerCase().includes(query));
+            displayList(filteredSites);
+            displayTable(filteredSites);
+        });
+
+        document.getElementById('view-list').addEventListener('click', function() {
+            document.getElementById('site-list').classList.remove('hidden');
+            document.getElementById('site-table').classList.add('hidden');
+            document.getElementById('planning-content').classList.add('hidden');
+        });
+
+        document.getElementById('view-table').addEventListener('click', function() {
+            document.getElementById('site-list').classList.add('hidden');
+            document.getElementById('site-table').classList.remove('hidden');
+            document.getElementById('planning-content').classList.add('hidden');
+        });
+
+        document.getElementById('view-planning').addEventListener('click', function() {
+            document.getElementById('site-list').classList.add('hidden');
+            document.getElementById('site-table').classList.add('hidden');
+            document.getElementById('planning-content').classList.remove('hidden');
+        });
+
+        // Afficher les polygones sur la carte
+        greenSpaces.forEach(site => {
+            var color = getColor(site.lastCollection);
+            L.polygon(site.coordinates, { color: color, fillColor: color, fillOpacity: 0.5 }).addTo(map).bindPopup(`<b>${site.name}</b><br>Dernière Collecte: ${site.lastCollection}`);
+        });
+
+        // Afficher la liste au chargement et cacher les autres sections
+        document.getElementById('site-list').classList.remove('hidden');
+        document.getElementById('site-table').classList.add('hidden');
+        document.getElementById('planning-content').classList.add('hidden');
+        displayList(greenSpaces);
+        displayTable(greenSpaces);
+    </script>
+</body>
+</html>

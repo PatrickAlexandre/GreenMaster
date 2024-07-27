@@ -1,0 +1,186 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion des Espaces Verts</title>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        #map { height: 100vh; padding: 15px; }
+        @media (max-width: 768px) {
+            #map { height: 50vh; }
+            #planning { height: 50vh; overflow-y: auto; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-6 col-12 p-0">
+                <div id="map"></div>
+            </div>
+            <div class="col-md-6 col-12">
+                <div id="planning" class="p-3">
+                    <h2 class="text-center">PLANNING MENSUEL EQUIPE NORD</h2>
+                    <div class="d-flex justify-content-center mb-3">
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-secondary" id="view-map" disabled>Carte</button>
+                            <button type="button" class="btn btn-primary" id="view-table">Tableau</button>
+                            <button type="button" class="btn btn-primary" id="view-list">Liste</button>
+                        </div>
+                    </div>
+                    <input type="text" id="search" class="form-control mb-3" placeholder="Recherche...">
+                    <div id="site-list"></div>
+                    <div id="site-table" style="display: none;">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr><th>Nom du site</th><th>Latitude</th><th>Longitude</th><th>Dernière Collecte</th></tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+        var map = L.map('map').setView([48.9401, 2.1769], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors' }).addTo(map);
+
+        var greenSpaces = [
+    {
+        "name": "Parc des Trois Ormes",
+        "coordinates": [
+            [
+                48.9391,
+                2.1778
+            ],
+            [
+                48.9392,
+                2.1781
+            ],
+            [
+                48.9394,
+                2.1779
+            ],
+            [
+                48.9393,
+                2.1776
+            ]
+        ],
+        "lastCollection": "2024-06-15"
+    },
+    {
+        "name": "Jardin de l'\u00c9glise",
+        "coordinates": [
+            [
+                48.9405,
+                2.1762
+            ],
+            [
+                48.9406,
+                2.1765
+            ],
+            [
+                48.9408,
+                2.1763
+            ],
+            [
+                48.9407,
+                2.176
+            ]
+        ],
+        "lastCollection": "2024-05-20"
+    },
+    {
+        "name": "Square des Libert\u00e9s",
+        "coordinates": [
+            [
+                48.941,
+                2.1784
+            ],
+            [
+                48.9411,
+                2.1787
+            ],
+            [
+                48.9413,
+                2.1785
+            ],
+            [
+                48.9412,
+                2.1782
+            ]
+        ],
+        "lastCollection": "2024-07-10"
+    },
+    {
+        "name": "Parc du Centre",
+        "coordinates": [
+            [
+                48.942,
+                2.1751
+            ],
+            [
+                48.9422,
+                2.1754
+            ],
+            [
+                48.9424,
+                2.1752
+            ],
+            [
+                48.9423,
+                2.1749
+            ]
+        ],
+        "lastCollection": "2024-06-05"
+    }
+];
+
+        function displayList(sites) {
+            document.getElementById('site-list').innerHTML = '<ul class="list-group">' + sites.map(site => `<li class="list-group-item">${site.name}</li>`).join('') + '</ul>';
+        }
+
+        function displayTable(sites) {
+            document.querySelector('#site-table tbody').innerHTML = sites.map(site => `<tr><td>${site.name}</td><td>${site.coordinates[0][0]}</td><td>${site.coordinates[0][1]}</td><td>${site.lastCollection}</td></tr>`).join('');
+        }
+
+        function getColor(lastCollection) {
+            const today = new Date();
+            const collectionDate = new Date(lastCollection);
+            const diffDays = Math.floor((today - collectionDate) / (1000 * 60 * 60 * 24));
+            return diffDays <= 30 ? 'green' : (diffDays <= 60 ? 'orange' : 'red');
+        }
+
+        document.getElementById('search').addEventListener('input', function() {
+            var query = this.value.toLowerCase();
+            var filteredSites = greenSpaces.filter(site => site.name.toLowerCase().includes(query));
+            displayList(filteredSites);
+            displayTable(filteredSites);
+        });
+
+        ['view-list', 'view-map', 'view-table'].forEach(view => {
+            document.getElementById(view).addEventListener('click', function() {
+                document.getElementById('site-list').style.display = view === 'view-list' ? 'block' : 'none';
+                document.getElementById('site-map').style.display = view === 'view-map' ? 'block' : 'none';
+                document.getElementById('site-table').style.display = view === 'view-table' ? 'block' : 'none';
+            });
+        });
+
+        greenSpaces.forEach(site => {
+            var color = getColor(site.lastCollection);
+            L.polygon(site.coordinates, { color: color, fillColor: color, fillOpacity: 0.5 }).addTo(map).bindPopup(`<b>${site.name}</b><br>Dernière Collecte: ${site.lastCollection}`);
+        });
+
+        displayList(greenSpaces);
+        displayTable(greenSpaces);
+    </script>
+</body>
+</html>
