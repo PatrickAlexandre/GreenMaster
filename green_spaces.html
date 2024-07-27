@@ -75,7 +75,7 @@
             </div>
         </div>
     </div>
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -129,12 +129,12 @@
 
         // Fonction pour afficher la liste des sites
         function displayList(sites) {
-            document.getElementById('site-list').innerHTML = '<ul class="list-group">' + sites.map(site => `<li class="list-group-item">${site.name}</li>`).join('') + '</ul>';
+            $('#site-list').html('<ul class="list-group">' + sites.map(site => `<li class="list-group-item">${site.name}</li>`).join('') + '</ul>');
         }
 
         // Fonction pour afficher le tableau des sites
         function displayTable(sites) {
-            document.querySelector('#site-table tbody').innerHTML = sites.map(site => `<tr><td>${site.name}</td><td>${site.coordinates[0][0]}</td><td>${site.coordinates[0][1]}</td><td>${site.lastCollection}</td></tr>`).join('');
+            $('#site-table tbody').html(sites.map(site => `<tr><td>${site.name}</td><td>${site.coordinates[0][0]}</td><td>${site.coordinates[0][1]}</td><td>${site.lastCollection}</td></tr>`).join(''));
         }
 
         // Fonction pour obtenir la couleur en fonction de la date de la dernière collecte
@@ -146,41 +146,41 @@
         }
 
         // Fonction pour afficher les sites en fonction du mode de vue sélectionné
-        document.getElementById('search').addEventListener('input', function() {
-            var query = this.value.toLowerCase();
+        $('#search').on('input', function() {
+            var query = $(this).val().toLowerCase();
             var filteredSites = greenSpaces.filter(site => site.name.toLowerCase().includes(query));
             displayList(filteredSites);
             displayTable(filteredSites);
         });
 
-        document.getElementById('view-list').addEventListener('click', function() {
-            document.getElementById('site-list').classList.remove('hidden');
-            document.getElementById('site-table').classList.add('hidden');
-            document.getElementById('planning-content').classList.add('hidden');
+        $('#view-list').on('click', function() {
+            $('#site-list').removeClass('hidden');
+            $('#site-table, #planning-content').addClass('hidden');
         });
 
-        document.getElementById('view-table').addEventListener('click', function() {
-            document.getElementById('site-list').classList.add('hidden');
-            document.getElementById('site-table').classList.remove('hidden');
-            document.getElementById('planning-content').classList.add('hidden');
+        $('#view-table').on('click', function() {
+            $('#site-list').addClass('hidden');
+            $('#site-table').removeClass('hidden');
+            $('#planning-content').addClass('hidden');
         });
 
-        document.getElementById('view-planning').addEventListener('click', function() {
-            document.getElementById('site-list').classList.add('hidden');
-            document.getElementById('site-table').classList.add('hidden');
-            document.getElementById('planning-content').classList.remove('hidden');
+        $('#view-planning').on('click', function() {
+            $('#site-list, #site-table').addClass('hidden');
+            $('#planning-content').removeClass('hidden');
         });
 
         // Afficher les polygones sur la carte
         greenSpaces.forEach(site => {
             var color = getColor(site.lastCollection);
-            L.polygon(site.coordinates, { color: color, fillColor: color, fillOpacity: 0.5 }).addTo(map).bindPopup(`<b>${site.name}</b><br>Dernière Collecte: ${site.lastCollection}`);
+            var coordinates = site.coordinates[0]; // Utiliser la première coordonnée pour le lien Google Maps
+            var googleMapsLink = `https://www.google.com/maps/dir/?api=1&destination=${coordinates[0]},${coordinates[1]}`;
+            var popupContent = `<b>${site.name}</b><br>Dernière Collecte: ${site.lastCollection}<br><a href="${googleMapsLink}" class="btn btn-primary btn-sm mt-2" target="_blank">S'y rendre</a>`;
+            L.polygon(site.coordinates, { color: color, fillColor: color, fillOpacity: 0.5 }).addTo(map).bindPopup(popupContent);
         });
 
         // Afficher la liste au chargement et cacher les autres sections
-        document.getElementById('site-list').classList.remove('hidden');
-        document.getElementById('site-table').classList.add('hidden');
-        document.getElementById('planning-content').classList.add('hidden');
+        $('#site-list').removeClass('hidden');
+        $('#site-table, #planning-content').addClass('hidden');
         displayList(greenSpaces);
         displayTable(greenSpaces);
     </script>
